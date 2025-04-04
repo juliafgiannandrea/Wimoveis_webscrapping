@@ -177,6 +177,6 @@ df_resultados.to_sql('tb_imoveis', con=engine, if_exists='append', index=False)
 #FALTA: 
 #fazer passar de página para pegar todos os resultados e não só o da primeira pág de resultados 
 #usar loop while 
-#readme 
+
 
 
