@@ -2,6 +2,7 @@ from time import sleep
 from selenium import webdriver
 from selenium.webdriver.common.keys import Keys
 from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import Select
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options #para mudar o navegador, mudar aqui 
@@ -10,7 +11,7 @@ from sqlalchemy import create_engine, text
 from pathlib import Path
 from dotenv import load_dotenv
 import os 
-
+import time
 
 #VARIÁVEIS DA BUSCA: 
 TIPO = 'APARTAMENTO'
@@ -18,24 +19,22 @@ MODALIDADE = "VENDA"
 ESTADO = "DF"
 CIDADE = "BRASILIA / PLANO PILOTO"
 BAIRRO = "ASA NORTE"
-QUARTOS = "1"
+QUARTOS = "3"
 VALOR = "2000000"
 ENDERECO = "sqn 115"
-
 
 
 options = Options() #personalização do navegador
 url = "https://www.dfimoveis.com.br/" 
 driver = webdriver.Chrome(options=options) #para mudar o navegador, mudar aqui 
 driver.get(url)
-wait = WebDriverWait(driver,10) #esperar o upload da página - para todos componentes aparecerem ao abrir a página
+wait = WebDriverWait(driver,20) #esperar o upload da página - para todos componentes aparecerem ao abrir a página
 
 
-#para o robo fazer: (tipo o que faríamos com o mouse)
-
+#para o robo fazer: (o que faríamos com o mouse)
 #MODALIDADE 
 element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'select2-selection--single')))
-element.click() #clica no componone
+element.click() 
 element = wait.until(EC.element_to_be_clickable((By.CLASS_NAME, 'select2-search__field') ))
 element.send_keys(MODALIDADE)
 element.send_keys(Keys.ENTER)
@@ -74,12 +73,12 @@ element5.send_keys(Keys.ENTER)
 
 
 #QUARTOS: 
-# xpath = "/html/body/main/div[1]/section/section[1]/div[2]/div/form/div[1]/div[6]/div[1]/span/span[1]/span"
-# element6 = wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
-# element6.click()
-# element6_1 = wait.until(EC.element_to_be_clickable((By.CLASS_NAME,"select2-search__field" )))
-# element6_1.send_keys(QUARTOS)
-# element6_1.send_keys(Keys.ENTER)
+element6 = wait.until(EC.element_to_be_clickable((By.XPATH, "/html/body/main/div[1]/section/section[1]/div[2]/div/form/div[1]/div[6]/div[1]/span")))
+element6.click()
+
+option = wait.until(EC.element_to_be_clickable((By.XPATH, f"//li[contains(text(), '{QUARTOS}')]")))
+option.click()
+
 
 #VALOR:
 xpath = "/html/body/main/div[1]/section/section[1]/div[2]/div/form/div[1]/div[6]/div[2]/input"
@@ -90,7 +89,7 @@ element7.send_keys(Keys.ENTER)
 
 #ENDEREÇO:
 xpath = "/html/body/main/div[1]/section/section[1]/div[2]/div/form/div[1]/div[7]/input"
-element8=  wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
+element8= wait.until(EC.element_to_be_clickable((By.XPATH, xpath)))
 element8.click()
 element8.send_keys(ENDERECO)
 element8.send_keys(Keys.ENTER)
@@ -106,8 +105,12 @@ lst_imoveis = []
 xpath_resultados = "/html/body/main/div[1]/div[1]/div[2]/div[2]/div[2]"
 resultados = wait.until(EC.presence_of_element_located((By.XPATH, xpath_resultados)))
 
-#links = resultados.find_elements(By.TAG_NAME, "a") 
-links = [a.get_attribute("href") for a in resultados.find_elements(By.TAG_NAME, "a") if a.get_attribute("href")]
+links = []
+for a in resultados.find_elements(By.TAG_NAME, "a"):
+    href = a.get_attribute("href")
+    if href: #se não é vazio 
+        links.append(href)
+
 imoveis_encontrados = len(links)
 print("Total de imóveis encontrados:", imoveis_encontrados)
 
@@ -128,10 +131,8 @@ for link in links:
     quartos_element = wait.until(EC.presence_of_element_located((By.XPATH, "/html/body/main/section/div/div[1]/div/div/div[3]/div/div[7]/div/div[3]/h6")))
     imovel["quartos"] = quartos_element.text
 
-
     suites_element = wait.until(EC.presence_of_element_located((By.XPATH, "/html/body/main/section/div/div[1]/div/div/div[3]/div/div[7]/div/div[4]/h6")))
     imovel["suites"] = suites_element.text
-
 
     descricao_element = wait.until(EC.presence_of_element_located((By.XPATH, "/html/body/main/section/div/div[1]/div/div/div[6]/p")))
     imovel["descricao"] = descricao_element.text
@@ -142,8 +143,7 @@ for link in links:
 
 driver.quit() #fechar o navegador
 
-
-#Data frame: 
+#Data frame do sresultados:
 df_resultados = pd.DataFrame(lst_imoveis)
 
 #Tratamento dos dados retirados do site para inserção no banco de dados: 
@@ -174,9 +174,9 @@ engine = create_engine(DATABASE_URL)
 df_resultados.to_sql('tb_imoveis', con=engine, if_exists='append', index=False)
 
 
-
 #FALTA: 
-#fazer o filtro de quantidade de quartos funcionar 
-
 #fazer passar de página para pegar todos os resultados e não só o da primeira pág de resultados 
 #usar loop while 
+#readme 
+
+
